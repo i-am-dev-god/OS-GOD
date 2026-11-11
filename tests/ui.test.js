@@ -13,6 +13,10 @@ async function waitFor(predicate,description,timeout=5000){
 test('guest desktop and contextual account interactions',async()=>{
   const window=new Window({url:'http://localhost:5173/'});
   window.document.body.innerHTML='<div id="root"></div>';
+  const animations=[];
+  const originalRect=window.Element.prototype.getBoundingClientRect;
+  window.Element.prototype.getBoundingClientRect=function(){if(this.classList?.contains('note-card'))return {left:100,top:100,width:200,height:140,right:300,bottom:240};if(this.classList?.contains('utility-window'))return {left:250,top:80,width:600,height:500,right:850,bottom:580};return originalRect.call(this)};
+  window.Element.prototype.animate=function(frames,options){animations.push({target:this,frames,options});return {cancel(){}}};
   for(const name of ['window','document','navigator','location','localStorage','HTMLElement','Element','Event','MouseEvent']) Object.defineProperty(globalThis,name,{value:window[name],configurable:true,writable:true});
   const server=await createServer({configFile:'vite.config.js',server:{middlewareMode:true},appType:'custom',logLevel:'silent'});
   const q=selector=>window.document.querySelector(selector);
@@ -21,7 +25,16 @@ test('guest desktop and contextual account interactions',async()=>{
   let module;
   try {
     module=await server.ssrLoadModule('/src/main.jsx');
+    await waitFor(()=>q('.desktop'),'guest desktop');
+    assert.equal(q('.os-window'),null,'desktop is visible on startup');
+    click('.task-app[aria-label="Notes"]');
     await waitFor(()=>q('.library-window'),'guest workspace');
+    click('.note-card');
+    await waitFor(()=>q('.title-input')&&animations.some(a=>a.target.classList.contains('utility-window')),'note zoom into editor');
+    const firstZoom=animations.filter(a=>a.target.classList.contains('utility-window')).length;
+    click('.note-card');
+    await waitFor(()=>animations.filter(a=>a.target.classList.contains('utility-window')).length>firstZoom,'existing note zooms again');
+    click('.utility-window [aria-label="Close"]');await waitFor(()=>!q('.title-input'),'close opened note');
     const searchToggle=click('[aria-label="Open note search"]');
     await waitFor(()=>searchToggle.getAttribute('aria-expanded')==='true'&&window.document.activeElement===q('[aria-label="Search notes"]'),'expanded note search');
     click('.library-window [aria-label="Maximize"]');
@@ -54,6 +67,9 @@ test('guest desktop and contextual account interactions',async()=>{
     await waitFor(()=>q('.dock-large')&&JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').dockSize==='large','dock size');
     const mono=button('.segmented button','Mono');assert.ok(mono);mono.click();await waitFor(()=>q('.editor-font-mono'),'editor typeface');
     const compact=button('.segmented button','Compact');assert.ok(compact);compact.click();await waitFor(()=>q('.density-compact'),'compact density');
+    const motion=click('[aria-label="Toggle fluid motion"]');await waitFor(()=>q('.motion-off')&&motion.getAttribute('aria-pressed')==='false','motion setting');
+    const beforeReduced=animations.length;click('.note-card');await waitFor(()=>q('.utility-window.is-active .title-input'),'note opens without animation');assert.equal(animations.length,beforeReduced,'motion setting disables note zoom');
+    motion.click();await waitFor(()=>!q('.motion-off')&&motion.getAttribute('aria-pressed')==='true','motion restored');
     click('.library-window [aria-label="Snap window left"]');await waitFor(()=>q('.library-window').style.left==='10px','snapped window');
 
     click('.command-trigger');await waitFor(()=>q('[aria-label="Command palette"]'),'command palette');
@@ -73,7 +89,17 @@ test('guest desktop and contextual account interactions',async()=>{
     window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     await waitFor(()=>!q('.account-popover')&&window.document.activeElement===account,'account escape and focus return');
     window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
-    await waitFor(()=>window.document.activeElement===q('[aria-label="Search notes"]'),'keyboard search focus');
+    await waitFor(()=>q('[aria-label="Command palette"]')&&window.document.activeElement===q('[aria-label="Search commands"]'),'system-wide keyboard search');
+    assert.ok(button('.command-list button','Personalize desktop'),'system search includes settings');
+    assert.ok(button('.command-list button','Open favorites'),'system search includes collections');
+    const search=q('[aria-label="Search commands"]');
+    const setValue=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+    setValue.call(search,'Little things');search.dispatchEvent(new window.Event('input',{bubbles:true}));
+    await waitFor(()=>button('.command-list button','Little things worth keeping'),'system search finds notes');
+    setValue.call(search,'settings');search.dispatchEvent(new window.Event('input',{bubbles:true}));
+    await waitFor(()=>button('.command-list button','Personalize desktop'),'system search finds apps by category');
+    window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    await waitFor(()=>!q('[aria-label="Command palette"]'),'system search dismissal');
     click('.sidebar-profile');await waitFor(()=>q('.account-popover'),'sidebar account panel');
     window.document.body.dispatchEvent(new window.Event('pointerdown',{bubbles:true}));
     await waitFor(()=>!q('.account-popover'),'outside dismissal');

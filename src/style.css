@@ -68,3 +68,24 @@ button{transition:scale .18s cubic-bezier(.2,.8,.2,1),background-color .18s,colo
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}button:active:not(:disabled){scale:1}}
 .motion-off button:active,.motion-off button:active svg,.motion-off button:active .app-icon{transform:none!important;scale:1!important}
 @media(prefers-reduced-motion:reduce){button:active,button:active svg,button:active .app-icon{transform:none!important;scale:1!important}}
+
+/* Composed glass light responds to window focus without an always-running animation. */
+.os-window.has-flight{animation:none}
+.window-bar{position:relative;isolation:isolate}
+.window-bar::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;background:linear-gradient(108deg,transparent 20%,#fff9 48%,transparent 70%);transform:translateX(-90%)}
+.is-active .window-bar::after{animation:glass-refraction .55s cubic-bezier(.2,.7,.2,1) both}
+.theme-dark .window-bar::after{background:linear-gradient(108deg,transparent 20%,#d8edff38 48%,transparent 70%)}
+.no-glass .window-bar::after{display:none}
+@keyframes glass-refraction{0%{opacity:0;transform:translateX(-90%)}20%{opacity:.42}100%{opacity:0;transform:translateX(90%)}}
+.glass-window{transition:box-shadow .24s ease,border-color .24s ease}.is-active.glass-window{border-color:#ffffffd4}.theme-dark .is-active.glass-window{border-color:#ffffff58}
+.task-app .app-icon,.desktop-shortcut .app-icon{transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s ease}
+.note-card{transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,border-color .2s}.note-card:active{transform:translateY(0) scale(.985)}
+.primary-button,.settings-account,.auth-submit{transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,background-color .18s ease}.primary-button:active,.settings-account:active,.auth-submit:active{transform:scale(.97)}
+/* Full-height hover backgrounds match the real window-control hit targets. */
+.window-controls{align-items:stretch;align-self:stretch;gap:0}
+.window-controls button,.window-controls button[aria-label="Maximize"],.window-controls button[aria-label="Restore window"],.window-controls button[aria-label="Minimize"],.window-controls .close-window{align-self:stretch;height:100%;min-height:40px;min-width:36px;border-radius:0;scale:1!important}
+.window-controls .snap-control,.window-controls .focus-control{height:100%;min-height:40px;min-width:32px}
+.window-controls button:active{transform:none}.window-controls .close-window:hover,.window-controls .close-window:focus-visible{background:#ad5151;color:#fff}.theme-dark .window-controls .close-window:hover,.theme-dark .window-controls .close-window:focus-visible{background:#a74c4c;color:#fff}
+.motion-off .window-bar::after{animation:none!important;opacity:0}.motion-off .note-card:hover,.motion-off .note-card:active,.motion-off .task-app:hover .app-icon,.motion-off .desktop-shortcut:hover .app-icon{transform:none!important}
+@media(max-width:700px){.window-controls button,.window-controls button[aria-label="Maximize"],.window-controls button[aria-label="Restore window"],.window-controls button[aria-label="Minimize"],.window-controls .close-window{min-width:32px}.window-controls .focus-control{min-width:28px}.window-controls .snap-control{display:none}}
+@media(prefers-reduced-motion:reduce){.window-bar::after{animation:none!important;opacity:0}.note-card:hover,.note-card:active,.task-app:hover .app-icon,.desktop-shortcut:hover .app-icon{transform:none!important}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

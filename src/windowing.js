@@ -7,3 +7,11 @@ export function clampWindowPosition(x,y,width,height,windowWidth,windowHeight){
 }
 export function taskAction(window,activeId){return !window?'open':window.id===activeId&&!window.minimized?'minimize':'focus';}
 export function snapBounds(side,width,height){const gap=10,top=48,bottom=68;const available=Math.max(240,width-3*gap),half=Math.floor(available/2);return {x:side==='right'?gap*2+half:gap,y:top,w:half,h:Math.max(200,height-top-bottom),positioned:true,maximized:false};}
+// Calculate a compositor-friendly zoom from a note card to its final window.
+export function noteZoom(from,to){
+ if(!from||!to||![from.left,from.top,from.width,from.height,to.left,to.top,to.width,to.height].every(Number.isFinite)||from.width<=0||from.height<=0||to.width<=0||to.height<=0)return null;
+ const scale=Math.max(.12,Math.min(.85,from.width/to.width,from.height/to.height));
+ const x=from.left+from.width/2-to.left-to.width*scale/2;
+ const y=from.top+from.height/2-to.top-to.height*scale/2;
+ return {translate:`${x}px ${y}px`,scale:String(scale),transformOrigin:'top left'};
+}
