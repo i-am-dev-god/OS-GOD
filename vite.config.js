@@ -1,17 +1,2 @@
 import { defineConfig } from 'vite';
-import { readFileSync } from 'node:fs';
-
-export default defineConfig({
-  base: './',
-  server: { allowedHosts: ['.e2b.app'] },
-  plugins: [{
-    name: 'offline-worker',
-    generateBundle(_, bundle) {
-      const assets = ['./', './index.html', './manifest.webmanifest', './icon.svg', ...Object.keys(bundle).filter(name => /\.(js|css)$/.test(name)).map(name => './' + name)];
-      const worker = readFileSync(new URL('./src/offline-worker.js', import.meta.url), 'utf8')
-        .replace('__CACHE__', `lightlink-${Date.now()}`)
-        .replace('__ASSETS__', JSON.stringify(assets));
-      this.emitFile({ type: 'asset', fileName: 'sw.js', source: worker });
-    },
-  }],
-});
+export default defineConfig({base:'./',server:{host:'0.0.0.0',allowedHosts:['.e2b.app']},plugins:[{name:'offline-shell',generateBundle(_,bundle){const assets=['./','./index.html','./manifest.webmanifest','./icon.svg',...Object.keys(bundle).filter(n=>/\.(js|css|jpg)$/.test(n)).map(n=>'./'+n)];this.emitFile({type:'asset',fileName:'sw.js',source:`const CACHE='stillspace-${Date.now()}'; const ASSETS=${JSON.stringify(assets)}; self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))); self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('stillspace-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))); self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;if(e.request.mode==='navigate'){e.respondWith(fetch(e.request,{cache:'no-cache'}).then(r=>{if(!r.ok)throw Error('navigation failed');return r}).catch(()=>caches.match(new URL('./index.html',self.registration.scope).href)));return} e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`});}}]});
