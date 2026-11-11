@@ -34,3 +34,5 @@
 @media(prefers-reduced-motion:reduce){.room-panel{animation:none}}
 
 .motion-off .room-panel{animation:none!important}
+.room-footer-actions{display:flex;gap:14px;align-items:center}.room-workspace footer .room-delete{color:#b15d5d}.room-footer-actions button:disabled{opacity:.5;cursor:not-allowed}
+.room-picker legend{font-size:11px;font-weight:650;padding:0 5px}.room-app-choices{margin-left:22px;padding-left:12px;border-left:1px solid #dce4e7}
