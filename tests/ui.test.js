@@ -15,7 +15,7 @@ test('guest desktop and contextual account interactions',async()=>{
   window.document.body.innerHTML='<div id="root"></div>';
   const animations=[];
   const originalRect=window.Element.prototype.getBoundingClientRect;
-  window.Element.prototype.getBoundingClientRect=function(){if(this.classList?.contains('note-card'))return {left:100,top:100,width:200,height:140,right:300,bottom:240};if(this.classList?.contains('utility-window'))return {left:250,top:80,width:600,height:500,right:850,bottom:580};return originalRect.call(this)};
+  window.Element.prototype.getBoundingClientRect=function(){if(this.classList?.contains('task-app')||this.classList?.contains('desktop-shortcut'))return {left:20,top:60,width:50,height:50,right:70,bottom:110};if(this.classList?.contains('library-window'))return this.classList.contains('maximized')?{left:0,top:32,width:1200,height:700,right:1200,bottom:732}:{left:100,top:80,width:800,height:550,right:900,bottom:630};if(this.classList?.contains('note-card'))return {left:100,top:100,width:200,height:140,right:300,bottom:240};if(this.classList?.contains('utility-window'))return {left:250,top:80,width:600,height:500,right:850,bottom:580};return originalRect.call(this)};
   window.Element.prototype.animate=function(frames,options){animations.push({target:this,frames,options});return {cancel(){}}};
   for(const name of ['window','document','navigator','location','localStorage','HTMLElement','Element','Event','MouseEvent']) Object.defineProperty(globalThis,name,{value:window[name],configurable:true,writable:true});
   const server=await createServer({configFile:'vite.config.js',server:{middlewareMode:true},appType:'custom',logLevel:'silent'});
@@ -26,11 +26,12 @@ test('guest desktop and contextual account interactions',async()=>{
   try {
     module=await server.ssrLoadModule('/src/main.jsx');
     await waitFor(()=>q('.desktop'),'guest desktop');
-    assert.equal(q('.os-window'),null,'desktop is visible on startup');
+    assert.equal(q('.os-window'),null,'desktop is visible on startup');assert.equal(window.document.querySelectorAll('.desktop-shortcut').length,2,'only Notes and Settings shortcuts');
     click('.task-app[aria-label="Notes"]');
     await waitFor(()=>q('.library-window'),'guest workspace');
     click('.note-card');
     await waitFor(()=>q('.title-input')&&animations.some(a=>a.target.classList.contains('utility-window')),'note zoom into editor');
+    assert.equal(animations.filter(a=>a.target.classList.contains('utility-window')).at(-1).options.duration,620,'note zoom is slower and deliberate');
     const firstZoom=animations.filter(a=>a.target.classList.contains('utility-window')).length;
     click('.note-card');
     await waitFor(()=>animations.filter(a=>a.target.classList.contains('utility-window')).length>firstZoom,'existing note zooms again');
@@ -38,7 +39,7 @@ test('guest desktop and contextual account interactions',async()=>{
     const searchToggle=click('[aria-label="Open note search"]');
     await waitFor(()=>searchToggle.getAttribute('aria-expanded')==='true'&&window.document.activeElement===q('[aria-label="Search notes"]'),'expanded note search');
     click('.library-window [aria-label="Maximize"]');
-    await waitFor(()=>q('.library-window.maximized'),'maximized window');
+    await waitFor(()=>q('.library-window.maximized'),'maximized window');assert.ok(animations.some(a=>a.target.classList.contains('library-window')&&a.options.duration===440),'maximize animates');
     click('.library-window [aria-label="Restore window"]');
     await waitFor(()=>!q('.library-window.maximized'),'restored window');
 
@@ -54,15 +55,19 @@ test('guest desktop and contextual account interactions',async()=>{
     await waitFor(()=>q('[aria-label="List view"]')?.getAttribute('aria-pressed')==='true'&&q('.notes-grid.list-view'),'list view');
     const favorites=button('.primary-nav button','Favorites');assert.ok(favorites);favorites.click();
     await waitFor(()=>q('.library-heading h1')?.textContent==='Favorites'&&q('.note-card'),'favorites filter');
-    const noteTask=[...window.document.querySelectorAll('.task-app')].find(n=>n.title==='Untitled note');assert.ok(noteTask);noteTask.click();
-    await waitFor(()=>!q('.title-input'),'minimized editor');noteTask.click();
-    await waitFor(()=>q('.title-input'),'restored editor');
+    assert.equal(window.document.querySelectorAll('.task-app[aria-label="Notes"]').length,1,'notes share one taskbar button');
+    click('.utility-window [aria-label="Minimize"]');await waitFor(()=>!q('.title-input'),'minimized editor');
+    click('.task-app[aria-label="Notes"]');await waitFor(()=>q('[aria-label="Notes windows"]'),'grouped note windows');
+    const noteTask=button('.notes-switcher button','Untitled note');assert.ok(noteTask);noteTask.click();await waitFor(()=>q('.title-input'),'restored editor');
 
     const shortcut=button('.desktop-shortcut','Settings');assert.ok(shortcut);shortcut.click();
-    await waitFor(()=>q('.wallpaper-options button:nth-child(3)'),'settings');
+    await waitFor(()=>q('.settings-nav')&&button('.settings-nav button','Workspace')?.getAttribute('aria-current')==='page','workspace settings');assert.ok(animations.some(a=>a.target.getAttribute('aria-label')==='Settings'&&a.options.duration===520),'settings opens from its icon');
+    button('.settings-nav button','Data & account').click();await waitFor(()=>button('.data-actions button','Import text')&&button('.data-actions button','Export notes'),'data and account controls');
+    assert.ok(button('.settings-nav button','Appearance'));button('.settings-nav button','Appearance').click();await waitFor(()=>q('.wallpaper-options button:nth-child(3)'),'appearance settings');
     click('.wallpaper-options button:nth-child(3)');await waitFor(()=>q('.desktop.wall-aurora'),'wallpaper selection');
     const dark=button('.segmented button','Dark');assert.ok(dark);dark.click();
     await waitFor(()=>q('.theme-dark')&&JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').theme==='dark','dark theme');
+    button('.settings-nav button','Workspace').click();await waitFor(()=>button('.segmented button','Large'),'workspace controls');
     const large=button('.segmented button','Large');assert.ok(large);large.click();
     await waitFor(()=>q('.dock-large')&&JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').dockSize==='large','dock size');
     const mono=button('.segmented button','Mono');assert.ok(mono);mono.click();await waitFor(()=>q('.editor-font-mono'),'editor typeface');
@@ -70,7 +75,7 @@ test('guest desktop and contextual account interactions',async()=>{
     const motion=click('[aria-label="Toggle fluid motion"]');await waitFor(()=>q('.motion-off')&&motion.getAttribute('aria-pressed')==='false','motion setting');
     const beforeReduced=animations.length;click('.note-card');await waitFor(()=>q('.utility-window.is-active .title-input'),'note opens without animation');assert.equal(animations.length,beforeReduced,'motion setting disables note zoom');
     motion.click();await waitFor(()=>!q('.motion-off')&&motion.getAttribute('aria-pressed')==='true','motion restored');
-    click('.library-window [aria-label="Snap window left"]');await waitFor(()=>q('.library-window').style.left==='10px','snapped window');
+    const layoutTrigger=q('.library-window [aria-label="Maximize"]');layoutTrigger.focus();await waitFor(()=>q('[aria-label="Window layout"]'),'window layout menu');window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await waitFor(()=>!q('[aria-label="Window layout"]'),'layout menu dismissed');layoutTrigger.blur();layoutTrigger.focus();await waitFor(()=>q('[aria-label="Window layout"]'),'layout menu reopened');const snap=button('.layout-menu button','Snap left');assert.ok(snap);snap.click();await waitFor(()=>q('.library-window').style.left==='10px','snapped window');
 
     click('.command-trigger');await waitFor(()=>q('[aria-label="Command palette"]'),'command palette');
     const input=q('[aria-label="Search commands"]');assert.equal(input.getAttribute('aria-activedescendant'),'command-result-0');
