@@ -55,3 +55,6 @@ After signing in, open Account and choose favorites, other notes, standalone rem
 
 ### Desktop context navigation
 Right-click the Stillspace interface to open app navigation, create a note, search, or show the desktop. Context Menu or Shift+F10 also opens it; use arrow keys and Escape to navigate and dismiss. Text fields and selected text retain their native menu.
+
+### Account deletion
+In Account, expand **Delete account**, enter your password and type DELETE. Recent password authentication is required by the server. Deleting the account permanently removes its cloud notes, standalone reminders, cloud preferences and layout links; this cannot be undone. Cached account notes, history and reminder delivery records on the current device are removed on success. Guest data is not deleted, and caches on other devices and provider backups may remain. Export anything you want to keep first. Only the signed-in account can delete itself.
