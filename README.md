@@ -1,26 +1,23 @@
-# Lightlink
+# Stillspace
 
-A browser-based prototype for transferring files using animated QR codes. It is a baseline for testing optical transfer, not the proposed high-speed custom visual grid.
+A text-first desktop workspace with movable, resizable windows, a taskbar, a launcher, desktop shortcuts, and a customizable liquid-glass appearance. Create, edit, search, favorite, organize, export, and restore notes. Notes save locally as you type; sign in to sync across devices. Guest mode requires no account. On small screens windows expand to fit the display.
 
-## Use
+## Desktop interactions
 
-1. Load the deployed site on **both phones while online**, and wait until each says “Ready for offline.” Offline caching requires HTTPS and browser support; browsers may evict cached files. Test airplane mode before relying on it.
-2. On the home page choose “Send with camera codes” on the sender and “Receive with camera” on the receiver. Choose a non-empty file up to 10 MiB and allow camera access on the receiver. Both devices must be prepared online before the transfer; the optical transfer itself does not use a network.
-3. Point the receiver at the sender's screen. Frames repeat until all are read. If progress stalls, the receiver shows the first missing group number: type it into the sender to repeat that group. Repeat for other missing groups, or select Repeat all frames.
-4. Once the SHA-256 hash matches, download the file. Keep both pages open; a reload or closing the page loses transfer progress.
+Open notes in separate windows; drag their title bars, resize from the lower-right corner, minimize, maximize and restore with the taskbar. Open the launcher with Start, use Ctrl/Cmd+N for a new note or Ctrl/Cmd+K to search. Settings offers wallpaper, accent, desktop shortcuts, and a glass toggle. These settings are local to the browser.
 
-The baseline uses ordinary QR error correction and repeats exact chunks. It does **not** use fountain codes, encryption, automatic feedback, or the planned custom visual grid. It has not been validated across physical devices; camera capture, performance, and offline support differ by browser. Anyone who can see the displayed codes can potentially reconstruct the file; don't use it for confidential files. SHA-256 detects corruption but doesn't authenticate the sender. Frame speed is configurable, and lower settings may work better. Larger files can take a long time.
+## Local development
 
-## Development
+Node 22: `npm ci`, `npm test`, `npm run dev`, `npm run build`. The development server is exposed on `0.0.0.0` for preview. The production build uses relative paths for GitHub Pages. Offline app-shell caching is enabled only in the production build; open the deployed site online first. Browser caches can be evicted, so keep backups.
 
-Node 22: `npm ci`, `npm test`, `npm run dev`, `npm run build`. A relative base path supports GitHub Pages project URLs. The included workflow deploys to GitHub Pages after changes reach `main`, assuming Pages is configured for GitHub Actions and repository permissions permit deployment. The local Vite development server does not provide offline caching; use the production build to test it.
+## Cloud sync
 
-## Direct Wi-Fi mode (experimental)
+The app is configured for the connected `os-god` Supabase project with its **publishable** key. The migration in `supabase/migrations/` creates a separate `memo_os_notes` table with row-level policies restricting notes to the signed-in user. It was applied to the connected project, and email sign-in was enabled on that project. Email signup requires confirmation. The configured confirmation URL is the GitHub Pages site; test sign-up after deployment. Supabase email delivery/rate limits can require further provider configuration.
 
-The home page now offers WebRTC data-channel transfer (up to 100 MiB). Both devices must connect to the same Wi-Fi or hotspot. **Turn mobile data off on both devices**: a browser cannot reliably establish that a host candidate is using Wi-Fi rather than cellular. The app has no STUN or TURN servers, removes non-host ICE candidates, and checks the selected local and remote candidates when the browser exposes them. If a selected candidate is known to be non-host, transfer is blocked. Some browsers do not expose enough information to verify the selected path; in that case both users must explicitly acknowledge the uncertainty before sending. No TURN relay is configured, but the app cannot independently guarantee the route in that case, or determine which network interface carries packets. Local networks may block device-to-device connectivity.
+Local guest notes stay local after login; open Account → Import local notes to copy them into the account. Sign-out switches to the guest workspace but **does not erase cached account notes from this browser**. Avoid shared devices or clear site data after exporting anything you need.
 
-Both devices need internet access for signaling via the existing Supabase project's public Realtime Broadcast (connection details only, not file bytes). Each session uses a six-digit room code. This code is easy to guess and does not authenticate the peer. Both users must compare and confirm the additional six-digit safety number derived from WebRTC fingerprints before any file transfer. This provides only limited protection against impersonation, especially with a public signaling service; do not use this prototype for sensitive files. WebRTC encrypts data in transit; SHA-256 verifies received content but does not independently authenticate the sender. File hashing and receiving use memory proportional to file size. This mode has not been tested on physical phones; speed, network behavior, signaling reliability, and real device compatibility are unverified. The camera-code mode is available from the home page and the direct transfer screen. It is a slow offline fallback, not an automatic or guaranteed connection method.
+The client fetches notes on login, focus, reconnect, and periodically. Changes are merged by note ID and client timestamp; concurrent changes to the same note use **last timestamp wins**, and conflicting edits may be lost. No version history is implemented. Deletion uses retained tombstones to prevent old devices resurrecting notes. Local browser storage and cloud plans have limits; neither compression nor this app makes storage unlimited.
 
-## Updating the website
+The app uses lossless gzip only when the base64-encoded result is smaller than the original JSON; otherwise it stores plain JSON. The storage indicator estimates serialized note payload only and excludes database overhead, metadata, tombstones, and backups. Notes are protected by Supabase row-level security and transport encryption, but are **not end-to-end encrypted**. Do not use the app for secrets requiring zero-knowledge storage.
 
-When online, the service worker fetches fresh navigation HTML and falls back to the cached page if the network is unavailable. When a new service worker takes over, the page offers an update button rather than interrupting a transfer. If an older installed version still shows a 16-character pairing code, open the site in a private browser tab or clear the site data, then reload while online. Both phones must use the same current version.
+Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` at build time to target a different project. Never put a service-role/secret key in frontend code. GitHub Pages deployment uses the included workflow after changes reach `main`.

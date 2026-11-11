@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {clampWindowPosition,taskAction} from '../src/windowing.js';
+test('dragging cannot lose the title bar outside the desktop',()=>{assert.deepEqual(clampWindowPosition(-100,-40,1000,700),{x:0,y:0});assert.deepEqual(clampWindowPosition(2000,2000,1000,700),{x:880,y:645});assert.deepEqual(clampWindowPosition(5,5,80,30),{x:0,y:0});});
+test('taskbar opens, minimizes and restores windows',()=>{assert.equal(taskAction(undefined,'library'),'open');assert.equal(taskAction({id:'library',minimized:false},'library'),'minimize');assert.equal(taskAction({id:'library',minimized:true},'library'),'focus');assert.equal(taskAction({id:'library',minimized:false},'other'),'focus');});
