@@ -38,3 +38,8 @@ The star launcher expands into Notes, Settings, and Account. Notes opened or cre
 
 ### Note history (device only)
 The History button in a note shows earlier title and body checkpoints, with preview and confirmed restore. Checkpoints are captured before text changes, at most once every 30 seconds, and before restoring or replacing local text with a newer cloud copy. Up to 20 versions and 512 KiB of text are kept per note; oversized versions cannot be saved. Search can find these local versions. History is kept separately for each guest/account workspace in this browser, is not synced or included in exports, and can be lost if site data is cleared or evicted. Existing notes gain history only after editing. Cloud sync still uses last-timestamp-wins and this local history cannot guarantee recovery of every cross-device conflict.
+
+### Reminders
+Open a note and select the bell to set or clear a reminder. The top-bar bell lists upcoming and overdue notes; clear a reminder with its check mark. Search can also find reminders. Dates are entered in the device’s local time zone and stored as UTC instants. Reminder dates sync with signed-in notes and are included in JSON exports; guest data stays on the device.
+
+Browser notifications are optional and require permission on each device. They can appear only while Stillspace is open; background tabs may be delayed, and missed reminders appear when the app is reopened. This is not a push service or an alarm when the browser is closed. Notification titles contain the note title. Delivery records are local to each browser, so multiple devices may each notify. Deleted notes do not notify; restoring a deleted note retains its reminder. Sync remains last-timestamp-wins.
