@@ -24,6 +24,6 @@ export function useWorkspace(){
  const createReminder=useCallback((title,reminderAt)=>{const item={...make(title.trim()),kind:'reminder',reminderAt,reminderCompletedAt:null};change(all=>[item,...all]);return item.id},[change]);
  const noteItems=useMemo(()=>notes.filter(n=>n.kind!=='reminder'),[notes]);
  const reminderItems=useMemo(()=>notes.filter(n=>n.kind==='reminder'),[notes]);
- const importGuest=()=>{const guest=readNotes('stillspace:notes:guest',[]).filter(n=>!n.deleted).map(n=>({...n,id:crypto.randomUUID(),updatedAt:new Date().toISOString()}));change(all=>[...guest,...all]);return guest.length};
+ const importGuest=(selection={notes:true,pinned:true,reminders:true})=>{const guest=readNotes('stillspace:notes:guest',[]).filter(n=>!n.deleted&&(n.kind==='reminder'?selection.reminders:n.starred?selection.pinned:selection.notes)).map(n=>({...n,id:crypto.randomUUID(),updatedAt:new Date().toISOString()}));change(all=>[...guest,...all]);return guest.length};
  return {session,ready:ready&&loadedKey==='stillspace:notes:'+(session?.user?.id||'guest'),notes:noteItems,reminderItems,history,status,update,restoreVersion,create,createReminder,sync,importGuest,guestHasNotes:!!session&&readNotes('stillspace:notes:guest',[]).some(n=>!n.deleted)};
 }
