@@ -15,7 +15,7 @@ export function useWorkspace(){
  useEffect(()=>{if(!ready||!session?.user?.id||loadedKey!=='stillspace:notes:'+session.user.id)return;const timer=setTimeout(sync,1400);return()=>clearTimeout(timer)},[notes,ready,session?.user?.id,sync,loadedKey]);
  useEffect(()=>{const attempt=()=>sync();window.addEventListener('online',attempt);window.addEventListener('focus',attempt);const timer=setInterval(attempt,30000);return()=>{window.removeEventListener('online',attempt);window.removeEventListener('focus',attempt);clearInterval(timer)}},[sync]);
  const update=useCallback((id,patch)=>{change(all=>all.map(n=>n.id===id?{...n,...patch,updatedAt:new Date().toISOString()}:n));setStatus(session?'Changes saved on this device':'Saved on this device')},[change,session]);
- const create=useCallback((folder='Personal')=>{const n=make('','',folder);change(all=>[n,...all]);return n.id},[change]);
+ const create=useCallback((folder='Personal',initial={})=>{const n={...make('','',folder),...initial};change(all=>[n,...all]);return n.id},[change]);
  const importGuest=()=>{const guest=readNotes('stillspace:notes:guest',[]).filter(n=>!n.deleted).map(n=>({...n,id:crypto.randomUUID(),updatedAt:new Date().toISOString()}));change(all=>[...guest,...all]);return guest.length};
  return {session,ready:ready&&loadedKey==='stillspace:notes:'+(session?.user?.id||'guest'),notes,status,update,create,sync,importGuest,guestHasNotes:!!session&&readNotes('stillspace:notes:guest',[]).some(n=>!n.deleted)};
 }

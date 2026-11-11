@@ -24,6 +24,9 @@ test('guest desktop opens notes, creates a note, and changes its wallpaper',asyn
     const aurora=window.document.querySelector('.wallpaper-options button:nth-child(3)');assert.ok(aurora);aurora.click();
     await new Promise(r=>setTimeout(r,30));
     assert.ok(window.document.querySelector('.desktop.wall-aurora'));
+    const compact=[...window.document.querySelectorAll('.segmented button')].find(n=>n.textContent==='Compact');assert.ok(compact);compact.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.density-compact'));
+    const snap=window.document.querySelector('[aria-label="Snap window left"]');assert.ok(snap);snap.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.library-window').style.left,'10px');
+    window.document.querySelector('.command-trigger').click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('[aria-label="Command palette"]'));
     const account=window.document.querySelector('.top-profile');account.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.auth-form'),'guest can open sign-in');
   } finally {module?.root?.unmount();const {cloud}=await server.ssrLoadModule('/src/cloud.js');cloud.auth.stopAutoRefresh();cloud.auth.broadcastChannel?.close();cloud.realtime.disconnect();await server.close();await window.happyDOM.abort();}
 });

@@ -4,7 +4,7 @@ A text-first desktop workspace with movable, resizable windows, a taskbar, a lau
 
 ## Desktop interactions
 
-Open notes in separate windows; drag their title bars, resize from the lower-right corner, minimize, maximize and restore with the taskbar. Open the launcher with Start, use Ctrl/Cmd+N for a new note or Ctrl/Cmd+K to search. Settings offers wallpaper, accent, desktop shortcuts, and a glass toggle. These settings are local to the browser.
+Open notes in separate windows; drag their title bars, resize from the lower-right corner, minimize, maximize and restore with the taskbar. Open the launcher with Start, use Ctrl/Cmd+N for a new note or Ctrl/Cmd+K to search. Settings offers preset or uploaded wallpaper (PNG/JPEG/WebP under 700 KB), accent color, glass blur, editor text size, layout density, taskbar alignment, desktop shortcuts, and a motion toggle. These settings are local to the browser; the OS reduced-motion preference is also respected. Windows can be snapped left or right, and focus mode hides other windows without closing them. Ctrl/Cmd+Shift+P opens the command palette. Import a .txt file, duplicate individual notes, or export all active notes as JSON (exports are unencrypted and do not include deleted notes).
 
 ## Local development
 
