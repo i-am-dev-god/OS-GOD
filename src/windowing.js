@@ -15,3 +15,14 @@ export function noteZoom(from,to){
  const y=from.top+from.height/2-to.top-to.height*scale/2;
  return {translate:`${x}px ${y}px`,scale:String(scale),transformOrigin:'top left'};
 }
+// Fit an existing frame in the middle of the available desktop.
+export function centerBounds(width,height,windowWidth,windowHeight){
+ const top=40,bottom=66,gap=8;
+ const w=Math.max(0,Math.min(windowWidth,width-gap*2));
+ const h=Math.max(0,Math.min(windowHeight,height-top-bottom));
+ return {x:Math.max(gap,(width-w)/2),y:Math.max(top,top+(height-top-bottom-h)/2),w,h,positioned:true,maximized:false};
+}
+export function windowMorph(from,to){
+ if(!from||!to||![from.left,from.top,from.width,from.height,to.left,to.top,to.width,to.height].every(Number.isFinite)||from.width<=0||from.height<=0||to.width<=0||to.height<=0)return null;
+ return {translate:`${from.left-to.left}px ${from.top-to.top}px`,scale:`${from.width/to.width} ${from.height/to.height}`,transformOrigin:'top left'};
+}
