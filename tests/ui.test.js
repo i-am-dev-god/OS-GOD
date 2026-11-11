@@ -3,45 +3,83 @@ import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 import {createServer} from 'vite';
 
-test('guest desktop opens notes, creates a note, and changes its wallpaper',async()=>{
+// Wait for React and its effects to settle without relying on CI machine speed.
+async function waitFor(predicate,description,timeout=5000){
+  const deadline=Date.now()+timeout;
+  do {if(predicate())return;await new Promise(r=>setTimeout(r,20));} while(Date.now()<deadline);
+  assert.fail(`Timed out waiting for ${description}`);
+}
+
+test('guest desktop and contextual account interactions',async()=>{
   const window=new Window({url:'http://localhost:5173/'});
   window.document.body.innerHTML='<div id="root"></div>';
   for(const name of ['window','document','navigator','location','localStorage','HTMLElement','Element','Event','MouseEvent']) Object.defineProperty(globalThis,name,{value:window[name],configurable:true,writable:true});
   const server=await createServer({configFile:'vite.config.js',server:{middlewareMode:true},appType:'custom',logLevel:'silent'});
+  const q=selector=>window.document.querySelector(selector);
+  const button=(selector,label)=>[...window.document.querySelectorAll(selector)].find(n=>n.textContent.includes(label));
+  const click=selector=>{const el=q(selector);assert.ok(el,`Missing ${selector}`);el.click();return el};
   let module;
   try {
     module=await server.ssrLoadModule('/src/main.jsx');
-    for(let i=0;i<30&&!window.document.querySelector('.library-window');i++) await new Promise(r=>setTimeout(r,20));
-    assert.ok(window.document.querySelector('.library-window'),'guest workspace opened');
-    const searchToggle=window.document.querySelector('[aria-label="Open note search"]');assert.ok(searchToggle);assert.equal(searchToggle.getAttribute('aria-expanded'),'false');searchToggle.click();await new Promise(r=>setTimeout(r,30));assert.equal(searchToggle.getAttribute('aria-expanded'),'true');assert.equal(window.document.activeElement.getAttribute('aria-label'),'Search notes');
-    const maximize=window.document.querySelector('.library-window [aria-label="Maximize"]');maximize.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.library-window.maximized'));const restore=window.document.querySelector('.library-window [aria-label="Restore window"]');assert.ok(restore);restore.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.library-window.maximized'),null);
+    await waitFor(()=>q('.library-window'),'guest workspace');
+    const searchToggle=click('[aria-label="Open note search"]');
+    await waitFor(()=>searchToggle.getAttribute('aria-expanded')==='true'&&window.document.activeElement===q('[aria-label="Search notes"]'),'expanded note search');
+    click('.library-window [aria-label="Maximize"]');
+    await waitFor(()=>q('.library-window.maximized'),'maximized window');
+    click('.library-window [aria-label="Restore window"]');
+    await waitFor(()=>!q('.library-window.maximized'),'restored window');
 
-    const newButton=window.document.querySelector('.primary-button');assert.ok(newButton);newButton.click();
-    for(let i=0;i<40&&!window.document.querySelector('.title-input');i++) await new Promise(r=>setTimeout(r,25));
-    assert.ok(window.document.querySelector('.title-input'),'editor opened: '+window.document.body.textContent.slice(-500));
+    click('.primary-button');
+    await waitFor(()=>q('.title-input'),'new note editor');
     assert.equal(window.document.querySelectorAll('.os-window').length,2);
-    const favorite=window.document.querySelector('[aria-label="Add to favorites"]');assert.ok(favorite);favorite.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('[aria-label="Remove favorite"]').getAttribute('aria-pressed'),'true');assert.ok(JSON.parse(window.localStorage.getItem('stillspace:notes:guest')).some(n=>n.title===''&&n.starred),'favorite is saved');
-    const sort=window.document.querySelector('[aria-label="Sort notes"]');assert.ok(sort);sort.value='title';sort.dispatchEvent(new window.Event('change',{bubbles:true}));await new Promise(r=>setTimeout(r,30));assert.equal(JSON.parse(window.localStorage.getItem('stillspace:desktop')).sortBy,'title');
-    const list=window.document.querySelector('[aria-label="List view"]');list.click();await new Promise(r=>setTimeout(r,30));assert.equal(list.getAttribute('aria-pressed'),'true');assert.ok(window.document.querySelector('.notes-grid.list-view'));
-    const favorites=[...window.document.querySelectorAll('.primary-nav button')].find(n=>n.textContent.includes('Favorites'));favorites.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.library-heading h1').textContent,'Favorites');assert.ok(window.document.querySelector('.note-card'));
-    const saved=JSON.parse(window.localStorage.getItem('stillspace:notes:guest'));assert.ok(saved.some(n=>n.title===''&&n.body===''),'new note saved locally');
-    const editorTask=[...window.document.querySelectorAll('.task-app')].find(n=>n.title==='Untitled note');assert.ok(editorTask);editorTask.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.title-input'),null,'taskbar minimizes editor');editorTask.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.title-input'),'taskbar restores editor');
-    const shortcut=[...window.document.querySelectorAll('.desktop-shortcut')].find(n=>n.textContent.includes('Settings'));shortcut.click();
-    await new Promise(r=>setTimeout(r,30));
-    const aurora=window.document.querySelector('.wallpaper-options button:nth-child(3)');assert.ok(aurora);aurora.click();
-    await new Promise(r=>setTimeout(r,30));
-    assert.ok(window.document.querySelector('.desktop.wall-aurora'));
-    const dark=[...window.document.querySelectorAll('.segmented button')].find(n=>n.textContent==='Dark');assert.ok(dark);dark.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.theme-dark'));assert.equal(JSON.parse(window.localStorage.getItem('stillspace:desktop')).theme,'dark');
-    const large=[...window.document.querySelectorAll('.segmented button')].find(n=>n.textContent==='Large');assert.ok(large);large.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.dock-large'));assert.equal(JSON.parse(window.localStorage.getItem('stillspace:desktop')).dockSize,'large');
-    const mono=[...window.document.querySelectorAll('.segmented button')].find(n=>n.textContent==='Mono');mono.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.editor-font-mono'));
-    const compact=[...window.document.querySelectorAll('.segmented button')].find(n=>n.textContent==='Compact');assert.ok(compact);compact.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.density-compact'));
-    const snap=window.document.querySelector('[aria-label="Snap window left"]');assert.ok(snap);snap.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.library-window').style.left,'10px');
-    window.document.querySelector('.command-trigger').click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('[aria-label="Command palette"]'));
-    const commandInput=window.document.querySelector('[aria-label="Search commands"]');assert.equal(commandInput.getAttribute('aria-activedescendant'),'command-result-0');commandInput.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));await new Promise(r=>setTimeout(r,30));assert.equal(commandInput.getAttribute('aria-activedescendant'),'command-result-1');commandInput.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('[aria-label="Command palette"]'),null);
-    const account=window.document.querySelector('.top-profile');const count=window.document.querySelectorAll('.os-window').length;account.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.account-popover .auth-form'),'guest can open sign-in in a contextual panel');assert.equal(window.document.querySelectorAll('.os-window').length,count,'account does not open a new window');assert.equal(window.document.activeElement.getAttribute('aria-label'),'Close account');
-    const signup=[...window.document.querySelectorAll('.account-popover .auth-tabs button')].find(n=>n.textContent==='Create account');signup.click();await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.account-popover .auth-submit').textContent.trim(),'Create your account');
-    window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,100));assert.equal(window.document.querySelector('.account-popover'),null);assert.ok(window.document.activeElement===account,'escape returns focus to trigger');
-    const profile=window.document.querySelector('.sidebar-profile');profile.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.account-popover'));window.document.body.dispatchEvent(new window.Event('pointerdown',{bubbles:true}));await new Promise(r=>setTimeout(r,30));assert.equal(window.document.querySelector('.account-popover'),null,'outside click closes panel');
-    const launcher=window.document.querySelector('.task-app[aria-label="Open launcher"]');launcher.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.start-menu'));const accountApp=[...window.document.querySelectorAll('.start-apps button')].find(n=>n.textContent==='Account');accountApp.click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.querySelector('.account-popover .auth-form'),'launcher account opens contextual panel');assert.equal(window.document.querySelector('.start-menu'),null);window.document.querySelector('.popover-close').click();await new Promise(r=>setTimeout(r,30));assert.ok(window.document.activeElement===account,'removed launcher trigger falls back to account button');
+    click('[aria-label="Add to favorites"]');
+    await waitFor(()=>q('[aria-label="Remove favorite"]')?.getAttribute('aria-pressed')==='true','favorite toggle');
+    await waitFor(()=>JSON.parse(window.localStorage.getItem('stillspace:notes:guest')||'[]').some(n=>n.title===''&&n.body===''&&n.starred),'favorite saved locally');
+    const sort=q('[aria-label="Sort notes"]');assert.ok(sort);sort.value='title';sort.dispatchEvent(new window.Event('change',{bubbles:true}));
+    await waitFor(()=>JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').sortBy==='title','sort preference');
+    click('[aria-label="List view"]');
+    await waitFor(()=>q('[aria-label="List view"]')?.getAttribute('aria-pressed')==='true'&&q('.notes-grid.list-view'),'list view');
+    const favorites=button('.primary-nav button','Favorites');assert.ok(favorites);favorites.click();
+    await waitFor(()=>q('.library-heading h1')?.textContent==='Favorites'&&q('.note-card'),'favorites filter');
+    const noteTask=[...window.document.querySelectorAll('.task-app')].find(n=>n.title==='Untitled note');assert.ok(noteTask);noteTask.click();
+    await waitFor(()=>!q('.title-input'),'minimized editor');noteTask.click();
+    await waitFor(()=>q('.title-input'),'restored editor');
+
+    const shortcut=button('.desktop-shortcut','Settings');assert.ok(shortcut);shortcut.click();
+    await waitFor(()=>q('.wallpaper-options button:nth-child(3)'),'settings');
+    click('.wallpaper-options button:nth-child(3)');await waitFor(()=>q('.desktop.wall-aurora'),'wallpaper selection');
+    const dark=button('.segmented button','Dark');assert.ok(dark);dark.click();
+    await waitFor(()=>q('.theme-dark')&&JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').theme==='dark','dark theme');
+    const large=button('.segmented button','Large');assert.ok(large);large.click();
+    await waitFor(()=>q('.dock-large')&&JSON.parse(window.localStorage.getItem('stillspace:desktop')||'{}').dockSize==='large','dock size');
+    const mono=button('.segmented button','Mono');assert.ok(mono);mono.click();await waitFor(()=>q('.editor-font-mono'),'editor typeface');
+    const compact=button('.segmented button','Compact');assert.ok(compact);compact.click();await waitFor(()=>q('.density-compact'),'compact density');
+    click('.library-window [aria-label="Snap window left"]');await waitFor(()=>q('.library-window').style.left==='10px','snapped window');
+
+    click('.command-trigger');await waitFor(()=>q('[aria-label="Command palette"]'),'command palette');
+    const input=q('[aria-label="Search commands"]');assert.equal(input.getAttribute('aria-activedescendant'),'command-result-0');
+    input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+    await waitFor(()=>input.getAttribute('aria-activedescendant')==='command-result-1','command selection');
+    input.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+    await waitFor(()=>!q('[aria-label="Command palette"]'),'command palette closure');
+    const account=q('.top-profile'),count=window.document.querySelectorAll('.os-window').length;account.click();
+    await waitFor(()=>q('.account-popover .auth-form')&&window.document.activeElement===q('[aria-label="Close account"]'),'contextual account panel and focus');
+    assert.equal(window.document.querySelectorAll('.os-window').length,count,'account does not open a new window');
+    // A pending search action must not steal focus from the account panel later.
+    await new Promise(r=>setTimeout(r,180));
+    assert.equal(window.document.activeElement.getAttribute('aria-label'),'Close account','search must not steal focus from account');
+    const signup=button('.account-popover .auth-tabs button','Create account');assert.ok(signup);signup.click();
+    await waitFor(()=>q('.account-popover .auth-submit')?.textContent.trim()==='Create your account','signup form');
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    await waitFor(()=>!q('.account-popover')&&window.document.activeElement===account,'account escape and focus return');
+    window.dispatchEvent(new window.KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
+    await waitFor(()=>window.document.activeElement===q('[aria-label="Search notes"]'),'keyboard search focus');
+    click('.sidebar-profile');await waitFor(()=>q('.account-popover'),'sidebar account panel');
+    window.document.body.dispatchEvent(new window.Event('pointerdown',{bubbles:true}));
+    await waitFor(()=>!q('.account-popover'),'outside dismissal');
+    click('.task-app[aria-label="Open launcher"]');await waitFor(()=>q('.start-menu'),'launcher');
+    const accountApp=button('.start-apps button','Account');assert.ok(accountApp);accountApp.click();
+    await waitFor(()=>q('.account-popover .auth-form')&&!q('.start-menu'),'launcher account panel');
+    click('.popover-close');await waitFor(()=>!q('.account-popover')&&window.document.activeElement===account,'fallback focus after launcher closes');
   } finally {module?.root?.unmount();const {cloud}=await server.ssrLoadModule('/src/cloud.js');cloud.auth.stopAutoRefresh();cloud.auth.broadcastChannel?.close();cloud.realtime.disconnect();await server.close();await window.happyDOM.abort();}
 });
