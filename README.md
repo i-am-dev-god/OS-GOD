@@ -21,3 +21,11 @@ The client fetches notes on login, focus, reconnect, and periodically. Changes a
 The app uses lossless gzip only when the base64-encoded result is smaller than the original JSON; otherwise it stores plain JSON. The storage indicator estimates serialized note payload only and excludes database overhead, metadata, tombstones, and backups. Notes are protected by Supabase row-level security and transport encryption, but are **not end-to-end encrypted**. Do not use the app for secrets requiring zero-knowledge storage.
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` at build time to target a different project. Never put a service-role/secret key in frontend code. GitHub Pages deployment uses the included workflow after changes reach `main`.
+
+### Desktop personalization
+Settings stores your wallpaper (including an optional local image), accent, glass and motion preferences, dock size and alignment, shortcut visibility, editor typeface and size, clock format, default notes view, and note sorting in this browser. The dock opens and switches windows; the menu bar opens settings, search, and the clock. Use the toolbar navigation button to hide or show the notes sidebar. These preferences do not sync with your account.
+
+### Appearance and navigation
+Choose Light, Dark, or System appearance in Settings. The desktop includes shortcuts to note collections as well as apps. Search the command palette for actions, collections, and note content with Ctrl/Cmd+Shift+P; use arrow keys and Enter to navigate results. Ctrl/Cmd+K searches the note library, Ctrl/Cmd+N creates a note, Ctrl/Cmd+Shift+J cycles open or minimized windows, and Ctrl/Cmd+Shift+M minimizes the active window. Motion can be disabled in Settings and respects the system reduced-motion setting.
+
+The note search control expands in place when selected; Ctrl/Cmd+K also opens and focuses it. Import and export remain in the command palette. Maximizing a window fills the usable desktop between the menu bar and taskbar; it does not request browser fullscreen. Dragging keeps a window within the usable area when its dimensions fit.
