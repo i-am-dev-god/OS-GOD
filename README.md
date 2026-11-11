@@ -85,3 +85,12 @@ Archive a note using the archive button in its editor; find it under Archive in 
 In a shared room, use Raise hand in the shared alert or Participants panel. A raised hand appears next to your name and in the Participants badge; lower it when finished. Hand state is broadcast to everyone with the room code regardless of activity visibility and is reset on leaving. It can take a few seconds to appear and is not a reliable notification when connectivity is interrupted. Participants and room names are not verified.
 
 Clipboard opens inside the launcher; use the arrow to extract it into a movable window and its star to return it to the launcher. Copies from other applications still require the explicit Add clipboard action.
+
+### Tags, find and replace, chat and custom snooze
+Add or remove up to 20 tags per note in the editor. Tags are included in note search and appear in the Notes sidebar for filtering; they sync with notes and are shared with a note when app-level sharing is enabled. Archived notes can be found in Archive, not the active tag list.
+
+Use the editor's search button to find case-sensitive text in the body and replace the first or all occurrences. Changes are subject to the existing local note-history limits. Shared notes owned by others remain read-only.
+
+The Chat button in a live room opens a temporary message panel. Messages are broadcast to everyone with the room code regardless of app sharing choices, are not end-to-end encrypted, and are not saved for later arrivals or offline participants. Names are self-selected and unverified. Delivery is best effort; a successful send is not a read receipt. Each open client retains at most 100 messages in memory until it leaves the room. Do not send secrets.
+
+A reminder's Custom snooze opens the existing date and time editor, which supports a custom future time; shared reminders belonging to others remain read-only. Notifications remain dependent on the app being open and browser permissions.
