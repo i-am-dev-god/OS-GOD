@@ -113,3 +113,13 @@ button{transition:scale .18s cubic-bezier(.2,.8,.2,1),background-color .18s,colo
 @keyframes launcher-enter{from{opacity:0;scale:.96;translate:0 -6px}to{opacity:1;scale:1;translate:0 0}}@keyframes launcher-content{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:700px){.start-menu.launcher-frame{max-height:calc(100dvh - 48px)}.launcher-library .library-sidebar{top:0}.launcher-header{height:44px}.launcher-body .library-heading{gap:8px}}
 @media(prefers-reduced-motion:reduce){.start-menu.launcher-frame,.launcher-home,.launcher-body{animation:none!important;transition:none!important}}
+
+/* The launcher can hold an editor or release any app as a free window. */
+.start-menu.launcher-editor{width:min(760px,calc(100vw - 16px));height:min(680px,calc(100dvh - 48px))}
+.launcher-body>.editor-shell{flex:1;min-width:0}.launcher-header strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Search emerges as a floating liquid surface, without dimming or blocking the desktop. */
+.command-backdrop{pointer-events:none;background:transparent;padding:0;align-items:flex-start;justify-content:center}
+.command-palette{pointer-events:auto;margin-top:clamp(48px,10vh,100px);max-height:calc(100dvh - 120px);transform-origin:50% 0;animation:search-liquid 520ms cubic-bezier(.4,0,.2,1) both}
+@keyframes search-liquid{0%{opacity:0;clip-path:inset(0 42% 85% 42% round 30px);transform:translateY(-18px) scale(.92,.8)}55%{opacity:1;clip-path:inset(0 0 0 0 round 15px);transform:translateY(2px) scale(1.01,1.01)}100%{opacity:1;clip-path:inset(0 0 0 0 round 15px);transform:translateY(0) scale(1)}}
+@media(max-width:700px){.command-palette{width:calc(100vw - 24px);margin-top:46px;max-height:calc(100dvh - 105px)}}
+@media(prefers-reduced-motion:reduce){.command-palette{animation:none!important}}
