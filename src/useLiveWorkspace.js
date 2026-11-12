@@ -31,10 +31,13 @@ export function useLiveWorkspace(room,personal,notify,onEnd,activity){
  const expiry=setInterval(check,10000);return()=>{alive=false;readyRef.current=false;clearInterval(refresh);clearInterval(expiry);cloud.removeChannel(channel);channelRef.current=null};
  },[room?.code]);
  const remote=useMemo(()=>Object.values(peers).flatMap(p=>p.items.map(n=>({...n,tags:Array.isArray(n.tags)?n.tags.filter(t=>typeof t==='string'&&t.length<=32).slice(0,20):[],roomReadOnly:true,roomOwner:p.name,roomOwnerId:p.id,roomSuggestions:p.requests}))),[peers]);
- const localIds=useMemo(()=>new Set(local.map(n=>n.id)),[local]);
- const all=[...local,...remote.filter(n=>!localIds.has(n.id))];
+ // Newly created items remain visible and editable to their owner even when
+ // sharing new items is disabled. Only `local` is ever broadcast.
+ const visibleLocal=useMemo(()=>{if(!room||!personal.ready||(personal.session?.user?.id||'guest')!==room.ownerId)return [];const ids=new Set(local.map(n=>n.id));const privateNew=[...personal.notes,...personal.reminderItems].filter(n=>!n.deleted&&extraRef.current.has(n.id)&&!ids.has(n.id));return [...local,...privateNew]},[room,personal.ready,personal.session?.user?.id,personal.notes,personal.reminderItems,local,extra]);
+ const localIds=useMemo(()=>new Set(visibleLocal.map(n=>n.id)),[visibleLocal]);
+ const all=[...visibleLocal,...remote.filter(n=>!localIds.has(n.id))];
  const canEdit=id=>localIds.has(id);
- const update=(id,patch)=>{if(canEdit(id)){const item=local.find(n=>n.id===id);markWorking(item?.kind==='reminder'?'Updating Reminders':'Editing a note');personal.update(id,patch)}else notify('This item is view-only; its owner can edit it')};
+ const update=(id,patch)=>{if(canEdit(id)){const item=visibleLocal.find(n=>n.id===id);markWorking(item?.kind==='reminder'?'Updating Reminders':'Editing a note');personal.update(id,patch)}else notify('This item is view-only; its owner can edit it')};
  const create=(folder,initial)=>{const id=personal.create(folder,initial);setExtra(old=>[...old,id]);return id};
  const createReminder=(title,time)=>{const id=personal.createReminder(title,time);setExtra(old=>[...old,id]);return id};
  const sendBoard=async(stroke)=>{try{const result=await sendEvent('board-stroke',stroke);if(result!=='ok')return 'Not sent. Check your connection.';setBoard(old=>[...old,stroke].slice(-200));return ''}catch{return 'Not sent. Check your connection.'}};
