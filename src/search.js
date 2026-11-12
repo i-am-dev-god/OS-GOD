@@ -1,0 +1,5 @@
+// Match user text literally. Rendered as React text, never as HTML.
+function match(text,term){if(!term)return null;const escaped=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return new RegExp(escaped,'i').exec(text||'')}
+export function rankMatch(item,term){const title=(item.label||'').toLowerCase(),q=term.toLowerCase();if(title===q)return 100;if(title.startsWith(q))return 85;if(title.includes(q))return 70;if((item.tags||[]).some(t=>t.toLowerCase().includes(q)))return 55;if(item.body&&match(item.body,term))return 40;return 20}
+export function excerpt(body,term){if(!body||!term)return null;const hit=match(body,term);if(!hit)return null;const start=Math.max(0,hit.index-45),end=Math.min(body.length,hit.index+hit[0].length+65);return {before:(start?'…':'')+body.slice(start,hit.index).replace(/\s+/g,' '),hit:hit[0],after:body.slice(hit.index+hit[0].length,end).replace(/\s+/g,' ')+(end<body.length?'…':'')};}
+export function titleParts(text,term){const hit=match(text,term);return hit?{before:text.slice(0,hit.index),hit:hit[0],after:text.slice(hit.index+hit[0].length)}:null}
