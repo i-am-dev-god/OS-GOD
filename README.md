@@ -104,3 +104,5 @@ Room chat uses the same live-room privacy model. The chat panel now groups messa
 
 ### Motion and interaction feedback
 Room chat, polls and whiteboard expand from their triggering control and return to it when closed; keyboard focus returns to that control when available. Poll results animate as counts change, and newly shown chat messages, calendar items, tags and clipboard entries have subtle arrival feedback. Chat no longer forces the scroll position to the newest message while you are reading older ones (sending your own message returns to the bottom). Stillspace's Fluid motion setting and the system reduced-motion preference disable these effects.
+
+Notes and Reminders use the same slate icon palette as the other launcher apps. Motion feedback also covers launcher icons, navigation and headings, settings sections, reminder editing, empty states, room controls and focus states. These interactions remain usable with motion disabled, and respect the system reduced-motion preference.
