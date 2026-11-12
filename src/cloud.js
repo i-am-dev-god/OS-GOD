@@ -24,3 +24,10 @@ export async function pushNotes(userId,notes){
   const {error}=await cloud.from('memo_os_notes').upsert(rows,{onConflict:'user_id,id'});
   if(error)throw error;
 }
+
+// Deletion markers contain only IDs and prevent old devices from restoring deleted content.
+export async function pullPurgedNotes(userId){
+  const ids=[];let after=null;
+  for(;;){let query=cloud.from('stillspace_purged_notes').select('id').eq('user_id',userId).order('id',{ascending:true}).limit(500);if(after)query=query.gt('id',after);const {data,error}=await query;if(error)throw error;ids.push(...data.map(row=>row.id));if(data.length<500)break;after=data[data.length-1].id;}
+  return ids;
+}
