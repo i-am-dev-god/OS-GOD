@@ -7,21 +7,22 @@ export function titleParts(text,term){const hit=match(text,term);return hit?{bef
 // Explicit filters are opt-in; unrecognised tokens remain literal search terms.
 export function parseSearch(input){
  const tokens=(input.match(/(?:[^\s"]|"[^"]*")+/g)||[]).map(t=>t.replace(/"/g,''));
- const result={words:[],exclude:[],scope:'active',kind:'all',tag:null,flag:null,folder:null,before:null,after:null,error:''};
+ const result={words:[],exclude:[],scope:'active',kind:'all',tags:[],flags:[],folder:null,before:null,after:null,error:''};
  for(const raw of tokens){const token=raw.toLowerCase();if(token.startsWith('-')&&token.length>1){result.exclude.push(token.slice(1));continue}const [key,...rest]=token.split(':');const val=rest.join(':');
-  if(key==='in'&&['archive','trash','notes','reminders','personal','work','ideas'].includes(val)){if(['archive','trash'].includes(val))result.scope=val;else if(['notes','reminders'].includes(val))result.kind=val;else result.folder=val;continue}
-  if(key==='tag'&&val){result.tag=val;continue}if(key==='is'&&['pinned','review','due','done'].includes(val)){result.flag=val;continue}
+  if(key==='in'&&['archive','trash','notes','reminders','personal','work','ideas'].includes(val)){if(['archive','trash'].includes(val)){if(result.scope!=='active'&&result.scope!==val)result.error='Choose either archive or trash.';result.scope=val}else if(['notes','reminders'].includes(val)){if(result.kind!=='all'&&result.kind!==val)result.error='Choose either notes or reminders.';result.kind=val}else{if(result.folder&&result.folder!==val)result.error='Choose one collection at a time.';result.folder=val}continue}
+  if(key==='tag'&&val){result.tags.push(val);continue}if(key==='is'&&['pinned','review','due','done'].includes(val)){result.flags.push(val);continue}
   if((key==='before'||key==='after')&&val){const m=val.match(/^(\d{4})-(\d{2})-(\d{2})$/),d=m?new Date(+m[1],+m[2]-1,+m[3]):null;if(!d||d.getFullYear()!==+m[1]||d.getMonth()!==+m[2]-1||d.getDate()!==+m[3])result.error='Use a valid date, for example after:2026-01-01.';else result[key]=d;continue}
   result.words.push(token)
  }
+ if(result.before&&result.after&&result.after.getTime()>result.before.getTime())result.error='The after date must be on or before the before date.';
  return result;
 }
 export function searchItem(n,q,now=Date.now()){
  if(q.error)return false;const text=[n.title,n.body,n.folder,...(Array.isArray(n.tags)?n.tags:[])].filter(v=>typeof v==='string').join(' ').toLowerCase();
  if(!q.words.every(w=>text.includes(w))||q.exclude.some(w=>text.includes(w)))return false;
- if(q.tag&&!(Array.isArray(n.tags)?n.tags:[]).some(t=>typeof t==='string'&&t.toLowerCase()===q.tag))return false;
+ if(!q.tags.every(tag=>(Array.isArray(n.tags)?n.tags:[]).some(t=>typeof t==='string'&&t.toLowerCase()===tag)))return false;
  if(q.folder&&(n.folder||'').toLowerCase()!==q.folder)return false;
- if(q.flag==='pinned'&&!n.starred||q.flag==='review'&&(!n.reviewLater||n.roomReadOnly)||q.flag==='done'&&!n.reminderCompletedAt||q.flag==='due'&&(!n.reminderAt||n.reminderCompletedAt||!Number.isFinite(Date.parse(n.reminderAt))||Date.parse(n.reminderAt)>now))return false;
+ if(q.flags.includes('pinned')&&!n.starred||q.flags.includes('review')&&(!n.reviewLater||n.roomReadOnly)||q.flags.includes('done')&&!n.reminderCompletedAt||q.flags.includes('due')&&(!n.reminderAt||n.reminderCompletedAt||!Number.isFinite(Date.parse(n.reminderAt))||Date.parse(n.reminderAt)>now))return false;
  const updated=Date.parse(n.updatedAt);if(q.after&&!(updated>=q.after.getTime()))return false;if(q.before){const end=new Date(q.before);end.setDate(end.getDate()+1);if(!(updated<end.getTime()))return false}return true;
 }
 export function rankTokens(item,words){if(!words.length)return 0;const text=words.join(' ');return rankMatch(item,text)+words.reduce((score,w)=>score+rankMatch(item,w),0)/words.length}
