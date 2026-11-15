@@ -34,6 +34,7 @@ import {overlayPosition} from './overlay';
 import './style.css';
 import './apps.css';
 import './productivity.css';
+import './app-system.css';
 
 const folders=['Personal','Work','Ideas'];
 const stamp=s=>{const d=new Date(s),now=new Date();if(d.toDateString()===now.toDateString())return 'Today';let y=new Date(now);y.setDate(now.getDate()-1);if(d.toDateString()===y.toDateString())return 'Yesterday';return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})};
