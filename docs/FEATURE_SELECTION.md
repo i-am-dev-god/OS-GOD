@@ -15,3 +15,7 @@ The requested 9/10 threshold is a product judgment, not a measured user rating. 
 - Per-task due dates parsed from arbitrary note text: ambiguous locale/time parsing and no reliable per-task identity; existing Reminders remains the explicit scheduling tool.
 - Automatic cross-device conflict resolution or claims of secure private notes: not safe without a versioned conflict protocol or an encryption and migration design.
 - Extra analytics, streaks or decorative dashboards: no clear evidence that they improve task completion or recovery.
+
+## Additional local utilities
+
+Meeting Notes, Text Cleaner, Word Counter, Text Compare, Markdown Preview, JSON Formatter, CSV Viewer, Date Calculator, Time Zones and Password Generator were selected as practical, self-contained tools for users who need their respective workflows. Their usefulness is a subjective product judgment, not a validated >9/10 user rating; no user research was performed. They avoid a separate synced data model and explain their limits in the interface. Meeting Notes deliberately creates a regular workspace note, while the other drafts are temporary and never broadcast by the tools. Passwords are not persisted. The small Markdown subset, JavaScript JSON precision, CSV/compare bounds and browser time-zone data are explicit trade-offs, not substitutes for full professional tools.
